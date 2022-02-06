@@ -11,6 +11,7 @@ piston_window = "0.121.0"
 image = "0.23.0"
 nalgebra-glm = "0.16.0"
 rand = "0.8.4"
+find_folder = "0.3.0"
 
 [env]
 WINIT_HIDPI_FACTOR=1.0

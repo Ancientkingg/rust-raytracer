@@ -2,6 +2,7 @@ use nalgebra_glm as glm;
 
 use crate::objects::Hittable;
 use crate::objects;
+use crate::util;
 
 pub struct Ray {
     pub origin: glm::TVec3<f64>,
@@ -22,10 +23,13 @@ impl Ray {
 
 
 
-pub fn ray_color(r: &Ray, world: &objects::HittableList) -> glm::TVec3<f64> {
-
+pub fn ray_color(r: &Ray, world: &objects::HittableList, depth: u8) -> glm::TVec3<f64> {
+    if depth <= 0 {
+        return glm::vec3(0.0,0.0,0.0);
+    }
     if let Some(hit) = world.hit(r, 0.001, std::f64::MAX) {
-        return 0.5 * (hit.normal + glm::vec3(1.0, 1.0, 1.0));
+        let target = hit.p + hit.normal + util::random_unit_vector();
+        return 0.5 * ray_color(&Ray::new(hit.p, target - hit.p), &world, depth);
     }
     let unit_direction = glm::normalize(&r.direction);
     let t = 0.5*(unit_direction.y + 1.0);

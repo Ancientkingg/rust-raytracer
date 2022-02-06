@@ -1,6 +1,7 @@
 use image;
-use piston_window;
+use piston_window::{self, Transformed};
 use nalgebra_glm as glm;
+use find_folder;
 
 // use piston_window::EventLoop;
 
@@ -14,10 +15,13 @@ mod color;
 mod objects;
 mod sphere;
 mod camera;
+mod util;
+mod materials;
 
 const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 720;
-const SAMPLES_PER_PIXEL: u32 = 10;
+const SAMPLES_PER_PIXEL: u32 = 3;
+const RAY_DEPTH: u8 = 50;
 
 fn main() {
     let mut frame_buffer: image::RgbaImage =
@@ -43,7 +47,7 @@ fn main() {
 
     // window.set_lazy(true);
     // let _counter = Instant::now();
-    // let mut fps_counter = fps_counter::FpsCounter::new();
+    let mut fps_counter = fps_counter::FpsCounter::new();
 
     //* WORLD
     let mut world = objects::HittableList::default();
@@ -53,19 +57,22 @@ fn main() {
     //* CAMERA
     let camera: camera::Camera = camera::Camera::default();
 
+
+    //* TEXT
+    let assets = find_folder::Search::ParentsThenKids(3, 3)
+        .for_folder("assets").unwrap();
+    let mut glyphs = window.load_font(assets.join("FiraSans-Regular.ttf")).unwrap();
+    
     while let Some(e) = window.next() {
         window.draw_2d(&e, |c, g, device| {
-
-            // let fps = fps_counter.tick();
-            // println!("FPS: {}", fps);
-
+        
             piston_window::clear([1.0; 4], g);
             for (x, y, pixel) in frame_buffer.enumerate_pixels_mut() {
                 let mut pixel_color = glm::vec3(0.0, 0.0, 0.0);
                 for _i in 0..SAMPLES_PER_PIXEL {
                     let screen_coords = glm::vec2((x as f64 + rand::random::<f64>()) / WIDTH as f64, 1. - ((y as f64 + rand::random::<f64>()) / HEIGHT as f64));
                     let ray: ray::Ray = camera.get_ray(screen_coords);
-                    pixel_color += ray::ray_color(&ray, &world);
+                    pixel_color += ray::ray_color(&ray, &world, RAY_DEPTH);
                 }
                 *pixel = color::write_pixel(pixel_color, SAMPLES_PER_PIXEL);
 
@@ -73,6 +80,20 @@ fn main() {
             tex.update(&mut tex_context, &frame_buffer).unwrap();
             piston_window::image(&tex, c.transform, g);
             tex_context.encoder.flush(device);
+
+
+            
+            //* FPS Counter
+            let fps = (fps_counter.tick() * 10.0).round() / 10.0;
+            let fps = fps.to_string();
+            let transform = c.transform.trans(10.0, 30.0);
+            piston_window::text::Text::new(32).draw(
+                &fps,
+                &mut glyphs,
+                &c.draw_state,
+                transform, g
+            ).unwrap();
+            glyphs.factory.encoder.flush(device);
         });
     }
 }
