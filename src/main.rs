@@ -51,9 +51,16 @@ fn main() {
 
     //* WORLD
     let mut world = objects::HittableList::default();
-    world.push(sphere::Sphere::new(glm::vec3(0.0, 0.0, -1.0), 0.5));
-    world.push(sphere::Sphere::new(glm::vec3(0.0, -100.5, -1.0), 100.0));
+    
+    let material_ground = materials::Lambertian::new(glm::vec3(0.8, 0.8, 0.0));
+    let material_centre = materials::Lambertian::new(glm::vec3(0.1, 0.2, 0.5));
+    let material_left =       materials::Dielectric::new(1.5);
+    let material_right =      materials::Metal::new(glm::vec3(0.8,0.6,0.2), 0.0);
 
+    world.push(sphere::Sphere::new(glm::vec3(0.0, -100.5, -1.0), 100.0, material_ground));
+    world.push(sphere::Sphere::new(glm::vec3(0.0, 0.0, -1.0), 0.5, material_centre));
+    world.push(sphere::Sphere::new(glm::vec3(-1.0, 0.0, -1.0), 0.5, material_left));
+    world.push(sphere::Sphere::new(glm::vec3(1.0, 0.0, -1.0), 0.5, material_right));
     //* CAMERA
     let camera: camera::Camera = camera::Camera::default();
 

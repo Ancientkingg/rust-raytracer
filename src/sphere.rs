@@ -37,13 +37,15 @@ impl<M: materials::Material> Hittable for Sphere<M> {
             if t < t_max && t > t_min {
                 let p = r.at(t);
                 let normal = (p - self.centre) / self.radius;
-                return Some(HitRecord { t, p, normal, material: &self.material })
+                let (normal, front_face) = objects::set_face_normal(r, normal);
+                return Some(HitRecord { t, p, normal, front_face, material: &self.material })
             }
             let t = (-b + sqrt_discriminant) / a;
             if t < t_max && t > t_min {
                 let p = r.at(t);
                 let normal = (p - self.centre) / self.radius;
-                return Some(HitRecord { t, p, normal, material: &self.material })
+                let (normal, front_face) = objects::set_face_normal(r, normal);
+                return Some(HitRecord { t, p, normal, front_face, material: &self.material })
             }
         }
         None

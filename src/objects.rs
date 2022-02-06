@@ -9,6 +9,17 @@ pub struct HitRecord<'a> {
     pub normal: glm::TVec3<f64>,
     pub t: f64,
     pub material: &'a dyn materials::Material,
+    pub front_face: bool
+}
+
+pub fn set_face_normal(r: &ray::Ray, outward_normal: glm::TVec3<f64>) -> (glm::TVec3<f64>, bool) {
+    let front_face = glm::dot(&r.direction, &outward_normal) < 0.0;
+    let normal: glm::TVec3<f64> = if front_face {
+        outward_normal
+    } else {
+        (-1.0) * outward_normal
+    };
+    (normal, front_face)
 }
 
 pub trait Hittable {
