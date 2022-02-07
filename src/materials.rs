@@ -3,7 +3,6 @@ use crate::ray;
 use crate::objects;
 use crate::util;
 use nalgebra_glm as glm;
-use std::sync::Arc;
 
 pub trait Material {
     fn scatter(&self, r_in: &ray::Ray, hit: &objects::HitRecord) -> Option<(ray::Ray, glm::TVec3<f64>)>;
@@ -14,8 +13,8 @@ pub struct Lambertian {
 }
 
 impl Lambertian {
-    pub fn new(albedo: glm::TVec3<f64>) -> Arc<Self> {
-        Arc::new(Lambertian { albedo })
+    pub fn new(albedo: glm::TVec3<f64>) -> Self {
+        Lambertian { albedo }
     }
 }
 
@@ -35,6 +34,7 @@ pub struct Metal {
     pub fuzz: f64,
 }
 
+#[allow(dead_code)]
 impl Metal {
     pub fn new(albedo: glm::TVec3<f64>, fuzz: f64) -> Self {
         Metal { albedo, fuzz: if fuzz < 1.0 { fuzz } else { 1.0 } }
@@ -57,6 +57,7 @@ pub struct Dielectric {
     pub ir: f64,
 }
 
+#[allow(dead_code)]
 impl Dielectric {
     pub fn new(ir: f64) -> Self {
         Dielectric { ir }

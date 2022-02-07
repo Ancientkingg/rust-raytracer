@@ -2,14 +2,13 @@
 use nalgebra_glm as glm;
 use crate::ray;
 use crate::materials;
-use std::sync::Arc;
 
 #[allow(dead_code)]
-pub struct HitRecord {
+pub struct HitRecord<'a> {
     pub p: glm::TVec3<f64>,
     pub normal: glm::TVec3<f64>,
     pub t: f64,
-    pub material: Arc<dyn materials::Material>,
+    pub material: &'a dyn materials::Material,
     pub front_face: bool
 }
 
