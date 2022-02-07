@@ -48,3 +48,16 @@ pub fn degrees_to_radians(deg: f64) -> f64 {
     const PI: f64 = std::f64::consts::PI;
     deg * PI / 180.0
 }
+
+pub fn random_point_in_unit_disk() -> glm::TVec3<f64> {
+    let mut rng = rand::thread_rng();
+    let distribution = Uniform::from(-1.0..=1.0);
+    loop {
+        let x = rng.sample(&distribution);
+        let y = rng.sample(&distribution);
+        let vector = glm::vec3(x, y, 0.0);
+        if glm::dot(&vector, &vector) <= 1.0 {
+            return vector;
+        }
+    }
+}

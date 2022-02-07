@@ -2,12 +2,12 @@ use image;
 use piston_window::{self, Transformed};
 use nalgebra_glm as glm;
 use find_folder;
-
+use std::time::Instant;
 
 // use piston_window::EventLoop;
 
-use std::{f64::{self, consts::PI}};
-use rand;
+use std::f64;
+use rand::{self, Rng};
 // use std::time::Instant;
 
 mod fps_counter;
@@ -19,14 +19,15 @@ mod camera;
 mod util;
 mod materials;
 
-const WIDTH: u32 = 1280 / 2;
-const HEIGHT: u32 = 720 / 2;
-const SAMPLES_PER_PIXEL: u32 = 3;
+const WIDTH: u32 = 1280;
+const HEIGHT: u32 = 720;
+const SAMPLES_PER_PIXEL: u32 = 1;
 const RAY_DEPTH: u8 = 50;
+const FRAME_TIME: u128 = 50;
 
 fn main() {
     let mut frame_buffer: image::RgbaImage =
-        image::RgbaImage::from_pixel(WIDTH, HEIGHT, image::Rgba([0, 255, 0, 255]));
+        image::RgbaImage::from_pixel(WIDTH, HEIGHT, image::Rgba([0, 0, 0, 255]));
 
     let mut window: piston_window::PistonWindow =
         piston_window::WindowSettings::new("Raytracer", [WIDTH, HEIGHT])
@@ -53,27 +54,32 @@ fn main() {
     //* WORLD
     let mut world = objects::HittableList::default();
     
-    // let material_ground = materials::Lambertian::new(glm::vec3(0.8, 0.8, 0.0));
-    // let material_centre = materials::Lambertian::new(glm::vec3(0.1, 0.2, 0.5));
-    // let material_left =   materials::Dielectric::new(1.5);
-    // let material_inner_left = materials::Dielectric::new(1.5);
-    // let material_right =      materials::Metal::new(glm::vec3(0.8,0.6,0.2), 0.0);
+    let material_ground = materials::Lambertian::new(glm::vec3(0.8, 0.8, 0.0));
+    let material_centre = materials::Lambertian::new(glm::vec3(0.1, 0.2, 0.5));
+    let material_left =   materials::Dielectric::new(1.5);
+    let material_right =      materials::Metal::new(glm::vec3(0.8,0.6,0.2), 0.0);
 
-    // world.push(sphere::Sphere::new(glm::vec3(0.0, -100.5, -1.0), 100.0, material_ground));
-    // world.push(sphere::Sphere::new(glm::vec3(0.0, 0.0, -1.0), 0.5, material_centre));
-    // world.push(sphere::Sphere::new(glm::vec3(-1.0, 0.0, -1.0), 0.5, material_left));
-    // world.push(sphere::Sphere::new(glm::vec3(-1.0, 0.0, -1.0), -0.4, material_inner_left));
-    // world.push(sphere::Sphere::new(glm::vec3(1.0, 0.0, -1.0), 0.5, material_right));
+    world.push(sphere::Sphere::new(glm::vec3(0.0, -100.5, -1.0), 100.0, material_ground));
+    world.push(sphere::Sphere::new(glm::vec3(0.0, 0.0, -1.0), 0.5, material_centre));
+    world.push(sphere::Sphere::new(glm::vec3(-1.0, 0.0, -1.0), 0.5, material_left.clone()));
+    world.push(sphere::Sphere::new(glm::vec3(-1.0, 0.0, -1.0), -0.4, material_left));
+    world.push(sphere::Sphere::new(glm::vec3(1.0, 0.0, -1.0), 0.5, material_right));
 
-    let r: f64 = (PI / 4.0).cos();
-    let material_left = materials::Lambertian::new(glm::vec3(0.0,0.0,1.0));
-    let material_right = materials::Lambertian::new(glm::vec3(1.0,0.0,0.0));
+    // let r: f64 = (PI / 4.0).cos();
+    // let material_left = materials::Lambertian::new(glm::vec3(0.0,0.0,1.0));
+    // let material_right = materials::Lambertian::new(glm::vec3(1.0,0.0,0.0));
 
-    world.push(sphere::Sphere::new(glm::vec3(-r, 0.0, -1.0), r, material_left));
-    world.push(sphere::Sphere::new(glm::vec3(r, 0.0, -1.0), r, material_right));
+    // world.push(sphere::Sphere::new(glm::vec3(-r, 0.0, -1.0), r, material_left));
+    // world.push(sphere::Sphere::new(glm::vec3(r, 0.0, -1.0), r, material_right));
 
     //* CAMERA
-    let camera: camera::Camera = camera::Camera::new(glm::vec3(-2.0, 2.0, 1.0), glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,1.0,0.0), 90.0, WIDTH as f64 / HEIGHT as f64);
+    let look_from = glm::vec3(3.0, 2.0, 2.0);
+    let look_at = glm::vec3(0.0, 0.0, -1.0);
+    let vup = glm::vec3(0.0, 1.0, 0.0);
+    let dist_to_focus = (look_from - look_at).magnitude();
+    let aperture = 0.0;
+    let aspect_ratio = WIDTH as f64 / HEIGHT as f64;
+    let camera: camera::Camera = camera::Camera::new(look_from, look_at, vup, 20.0, aspect_ratio, aperture, dist_to_focus);
 
 
     //* TEXT
@@ -85,16 +91,24 @@ fn main() {
         window.draw_2d(&e, |c, g, device| {
         
             piston_window::clear([1.0; 4], g);
-            for (x, y, pixel) in frame_buffer.enumerate_pixels_mut() {
-                let mut pixel_color = glm::vec3(0.0, 0.0, 0.0);
-                for _i in 0..SAMPLES_PER_PIXEL {
-                    let screen_coords = glm::vec2((x as f64 + rand::random::<f64>()) / WIDTH as f64, 1. - ((y as f64 + rand::random::<f64>()) / HEIGHT as f64));
-                    let ray: ray::Ray = camera.get_ray(screen_coords);
-                    pixel_color += ray::ray_color(&ray, &world, RAY_DEPTH);
-                }
-                *pixel = color::write_pixel(pixel_color, SAMPLES_PER_PIXEL);
+            // for (x, y, pixel) in frame_buffer.enumerate_pixels_mut() {
+                
+                let now = Instant::now();
+                while now.elapsed().as_millis() <= FRAME_TIME {
+                    let x = rand::thread_rng().gen_range(0..WIDTH);
+                    let y = rand::thread_rng().gen_range(0..HEIGHT);
+                    let pixel = frame_buffer.get_pixel_mut(x,y);
+                    let mut pixel_color = glm::vec3(0.0, 0.0, 0.0);
 
-            }
+                    for _i in 0..SAMPLES_PER_PIXEL {
+                        let screen_coords = glm::vec2((x as f64 + rand::random::<f64>()) / WIDTH as f64, 1. - ((y as f64 + rand::random::<f64>()) / HEIGHT as f64));
+                        let ray: ray::Ray = camera.get_ray(screen_coords);
+                        pixel_color += ray::ray_color(&ray, &world, RAY_DEPTH);
+                    }
+
+                    *pixel = color::write_pixel(pixel_color, *pixel, SAMPLES_PER_PIXEL, fps_counter.frames);
+                }
+            // }
             tex.update(&mut tex_context, &frame_buffer).unwrap();
             piston_window::image(&tex, c.transform, g);
             tex_context.encoder.flush(device);

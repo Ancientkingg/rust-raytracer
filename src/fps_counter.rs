@@ -3,7 +3,7 @@ use std::time::{UNIX_EPOCH, SystemTime};
 
 #[derive(Debug)] #[allow(dead_code)]
 pub struct FpsCounter {
-    frames: u32,
+    pub frames: u32,
     last_time: u64,
 }
 

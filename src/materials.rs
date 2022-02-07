@@ -35,9 +35,10 @@ pub struct Metal {
     pub fuzz: f64,
 }
 
+#[allow(dead_code)]
 impl Metal {
-    pub fn new(albedo: glm::TVec3<f64>, fuzz: f64) -> Self {
-        Metal { albedo, fuzz: if fuzz < 1.0 { fuzz } else { 1.0 } }
+    pub fn new(albedo: glm::TVec3<f64>, fuzz: f64) -> Arc<Self> {
+        Arc::new(Metal { albedo, fuzz: if fuzz < 1.0 { fuzz } else { 1.0 } })
     }
 }
 
@@ -57,9 +58,10 @@ pub struct Dielectric {
     pub ir: f64,
 }
 
+#[allow(dead_code)]
 impl Dielectric {
-    pub fn new(ir: f64) -> Self {
-        Dielectric { ir }
+    pub fn new(ir: f64) -> Arc<Self> {
+        Arc::new(Dielectric { ir })
     }
 }
 
