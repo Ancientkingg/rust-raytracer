@@ -87,6 +87,8 @@ fn main() {
         .for_folder("assets").unwrap();
     let mut glyphs = window.load_font(assets.join("FiraSans-Regular.ttf")).unwrap();
     
+    let mut frame_counts: Vec<u32> = vec![0; (WIDTH*HEIGHT) as usize];
+
     while let Some(e) = window.next() {
         window.draw_2d(&e, |c, g, device| {
         
@@ -106,7 +108,8 @@ fn main() {
                         pixel_color += ray::ray_color(&ray, &world, RAY_DEPTH);
                     }
 
-                    *pixel = color::write_pixel(pixel_color, *pixel, SAMPLES_PER_PIXEL, fps_counter.frames);
+                    *pixel = color::write_pixel(pixel_color, *pixel, SAMPLES_PER_PIXEL, frame_counts[(x + y * WIDTH) as usize]);
+                    frame_counts[(x + y * WIDTH) as usize] += 1;
                 }
             // }
             tex.update(&mut tex_context, &frame_buffer).unwrap();
