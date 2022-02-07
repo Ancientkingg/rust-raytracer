@@ -37,3 +37,14 @@ pub fn refract(vector: &glm::TVec3<f64>, normal: &glm::TVec3<f64>, etai_over_eta
     let r_out_parallel = -(1.0 - r_out_perp.magnitude_squared()).abs().sqrt() * normal;
     r_out_perp + r_out_parallel
 }
+
+pub fn schlick(cosine: f64, ref_idx: f64) -> f64 {
+    let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
+    r0 = r0 * r0;
+    r0  + (1.0 - r0) * (1.0 - cosine).powf(5.0)
+}
+
+pub fn degrees_to_radians(deg: f64) -> f64 {
+    const PI: f64 = std::f64::consts::PI;
+    deg * PI / 180.0
+}

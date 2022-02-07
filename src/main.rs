@@ -3,9 +3,10 @@ use piston_window::{self, Transformed};
 use nalgebra_glm as glm;
 use find_folder;
 
+
 // use piston_window::EventLoop;
 
-use std::f64;
+use std::{f64::{self, consts::PI}};
 use rand;
 // use std::time::Instant;
 
@@ -18,8 +19,8 @@ mod camera;
 mod util;
 mod materials;
 
-const WIDTH: u32 = 1280;
-const HEIGHT: u32 = 720;
+const WIDTH: u32 = 1280 / 2;
+const HEIGHT: u32 = 720 / 2;
 const SAMPLES_PER_PIXEL: u32 = 3;
 const RAY_DEPTH: u8 = 50;
 
@@ -52,17 +53,27 @@ fn main() {
     //* WORLD
     let mut world = objects::HittableList::default();
     
-    let material_ground = materials::Lambertian::new(glm::vec3(0.8, 0.8, 0.0));
-    let material_centre = materials::Lambertian::new(glm::vec3(0.1, 0.2, 0.5));
-    let material_left =       materials::Dielectric::new(1.5);
-    let material_right =      materials::Metal::new(glm::vec3(0.8,0.6,0.2), 0.0);
+    // let material_ground = materials::Lambertian::new(glm::vec3(0.8, 0.8, 0.0));
+    // let material_centre = materials::Lambertian::new(glm::vec3(0.1, 0.2, 0.5));
+    // let material_left =   materials::Dielectric::new(1.5);
+    // let material_inner_left = materials::Dielectric::new(1.5);
+    // let material_right =      materials::Metal::new(glm::vec3(0.8,0.6,0.2), 0.0);
 
-    world.push(sphere::Sphere::new(glm::vec3(0.0, -100.5, -1.0), 100.0, material_ground));
-    world.push(sphere::Sphere::new(glm::vec3(0.0, 0.0, -1.0), 0.5, material_centre));
-    world.push(sphere::Sphere::new(glm::vec3(-1.0, 0.0, -1.0), 0.5, material_left));
-    world.push(sphere::Sphere::new(glm::vec3(1.0, 0.0, -1.0), 0.5, material_right));
+    // world.push(sphere::Sphere::new(glm::vec3(0.0, -100.5, -1.0), 100.0, material_ground));
+    // world.push(sphere::Sphere::new(glm::vec3(0.0, 0.0, -1.0), 0.5, material_centre));
+    // world.push(sphere::Sphere::new(glm::vec3(-1.0, 0.0, -1.0), 0.5, material_left));
+    // world.push(sphere::Sphere::new(glm::vec3(-1.0, 0.0, -1.0), -0.4, material_inner_left));
+    // world.push(sphere::Sphere::new(glm::vec3(1.0, 0.0, -1.0), 0.5, material_right));
+
+    let r: f64 = (PI / 4.0).cos();
+    let material_left = materials::Lambertian::new(glm::vec3(0.0,0.0,1.0));
+    let material_right = materials::Lambertian::new(glm::vec3(1.0,0.0,0.0));
+
+    world.push(sphere::Sphere::new(glm::vec3(-r, 0.0, -1.0), r, material_left));
+    world.push(sphere::Sphere::new(glm::vec3(r, 0.0, -1.0), r, material_right));
+
     //* CAMERA
-    let camera: camera::Camera = camera::Camera::default();
+    let camera: camera::Camera = camera::Camera::new(glm::vec3(-2.0, 2.0, 1.0), glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,1.0,0.0), 90.0, WIDTH as f64 / HEIGHT as f64);
 
 
     //* TEXT

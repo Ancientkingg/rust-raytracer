@@ -3,6 +3,7 @@ use crate::ray;
 use crate::objects;
 use crate::util;
 use nalgebra_glm as glm;
+use std::sync::Arc;
 
 pub trait Material {
     fn scatter(&self, r_in: &ray::Ray, hit: &objects::HitRecord) -> Option<(ray::Ray, glm::TVec3<f64>)>;
@@ -13,8 +14,8 @@ pub struct Lambertian {
 }
 
 impl Lambertian {
-    pub fn new(albedo: glm::TVec3<f64>) -> Self {
-        Lambertian { albedo }
+    pub fn new(albedo: glm::TVec3<f64>) -> Arc<Self> {
+        Arc::new(Lambertian { albedo })
     }
 }
 
@@ -75,7 +76,7 @@ impl Material for Dielectric {
 
         let cannot_refract = refraction_ratio * sin_theta > 1.0;
         let dir: glm::TVec3<f64>;
-        if cannot_refract {
+        if cannot_refract || util::schlick(cos_theta, refraction_ratio) > rand::random() {
             dir = util::reflect(&unit_direction, &hit.normal);
         } else {
             dir = util::refract(&unit_direction, &hit.normal, refraction_ratio);
