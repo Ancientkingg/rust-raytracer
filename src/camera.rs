@@ -3,10 +3,11 @@ use crate::ray;
 use crate::util;
 use nalgebra_glm as glm;
 
-#[allow(dead_code)]
+#[allow(dead_code)] #[derive(Debug)]
 pub struct Camera {
     pub aspect_ratio: f64,
     pub vfov: f64,
+    pub wasd: [bool; 4],
     origin: glm::TVec3<f64>,
     horizontal: glm::TVec3<f64>,
     vertical: glm::TVec3<f64>,
@@ -15,6 +16,7 @@ pub struct Camera {
     v: glm::TVec3<f64>,
     w: glm::TVec3<f64>,
     lens_radius: f64,
+    focus_dist: f64
 }
 
 impl Camera {
@@ -41,6 +43,8 @@ impl Camera {
             lower_left_corner,
             u,v,w,
             lens_radius,
+            wasd: [false; 4],
+            focus_dist
         }
     }
 }
@@ -51,5 +55,10 @@ impl Camera {
         let rd = self.lens_radius * util::random_point_in_unit_disk();
         let offset = self.u * rd.x + self.v * rd.y;
         ray::Ray::new(self.origin + offset, self.lower_left_corner + self.horizontal * screen_coords.x + self.vertical * screen_coords.y - self.origin - offset)
+    }
+    pub fn apply_speed(&mut self, speed: [f64; 2]) {
+        self.origin += self.w * -speed[0] * 0.1;
+        self.origin += self.u * speed[1] * 0.1;
+        self.lower_left_corner = self.origin - self.horizontal/2.0 - self.vertical/2.0 - self.focus_dist * self.w;
     }
 }

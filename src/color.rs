@@ -8,7 +8,8 @@ pub fn write_pixel(frag: glm::TVec3<f64>, prev_color: image::Rgba<u8>, samples_p
     frag.y = (frag.y * scale).sqrt();
     frag.z = (frag.z * scale).sqrt();
     let new_color = image::Rgba([(frag.x as f64 * 256.) as u8, (frag.y as f64 * 256.) as u8, (frag.z as f64 * 256.) as u8, 255]);
-    mix(new_color, prev_color, frames as f64 / (frames as f64 + 1.0))
+    // mix(new_color, prev_color, frames as f64 / (frames as f64 + 1.0))
+    new_color
 }
 
 fn mix(v: image::Rgba<u8>, w: image::Rgba<u8>, factor: f64) -> image::Rgba<u8> {
