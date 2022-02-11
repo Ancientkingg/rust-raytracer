@@ -26,7 +26,8 @@ const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 720;
 const SAMPLES_PER_PIXEL: u32 = 1;
 const RAY_DEPTH: u8 = 20;
-const FRAME_TIME: u128 = 1000 / 10;
+const FPS: u128 = 24;
+const FRAME_TIME: u128 = 1000 / FPS;
 
 fn main() {
     let mut frame_buffer: image::RgbaImage =
