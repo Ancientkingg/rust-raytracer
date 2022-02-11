@@ -1,14 +1,13 @@
-
 use find_folder;
 use nalgebra_glm as glm;
-use piston_window::{Event::*, AdvancedWindow};
 use piston_window::Input::Button;
 use piston_window::{self, Transformed};
-use std::cell::Cell;
+use piston_window::{AdvancedWindow, Event::*};
+use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Instant;
-use std::sync::mpsc::channel;
+use rayon;
 
 use rand::{self, Rng};
 use std::{f64, thread};
@@ -119,31 +118,22 @@ fn main() {
         .load_font(assets.join("FiraSans-Regular.ttf"))
         .unwrap();
 
-    let render_reset_flag: &Cell<bool> = &Cell::new(false);
-
-    let mut frame_counts: Vec<i32> = vec![0; (WIDTH * HEIGHT) as usize];
-    let cam: Arc<Mutex<camera::Camera>> = Arc::clone(&camera);
-    let (sender, receiver) = channel();
-    thread::spawn(move || {
-        let mut speed: [f64; 2] = [0.0; 2];
-        loop {
-            let mouse_speed = receiver.try_recv().unwrap_or([0.0,0.0]);
+        let cam: Arc<Mutex<camera::Camera>> = Arc::clone(&camera);
+        let (sender, receiver) = channel();
+        thread::spawn(move || {
+            let mut speed: [f64; 3] = [0.0; 3];
+            loop {
+            let mouse_speed = receiver.try_recv().unwrap_or([0.0, 0.0]);
             let mut camera = cam.lock().unwrap();
-            if speed[0].abs() < 0.01 {
-                speed[0] = 0.0;
-            }
-            if speed[1].abs() < 0.01 {
-                speed[1] = 0.0;
-            }
-            if speed[0] > 0.0 {
-                speed[0] -= 0.1;
-            } else if speed[0] < 0.0 {
-                speed[0] += 0.1;
-            }
-            if speed[1] > 0.0 {
-                speed[1] -= 0.1;
-            } else if speed[1] < 0.0 {
-                speed[1] += 0.1;
+            for i in 0..speed.len() {
+                if speed[i].abs() < 0.01 {
+                    speed[i] = 0.0;
+                }
+                if speed[i] > 0.0 {
+                    speed[i] -= 0.1;
+                } else if speed[i] < 0.0 {
+                    speed[i] += 0.1;
+                }
             }
             // check for wasd to add or remove speed; make sure to make origin arc mutex
             if camera.wasd[0] {
@@ -158,6 +148,12 @@ fn main() {
             if camera.wasd[3] {
                 speed[1] += 0.2;
             }
+            if camera.wasd[4] {
+                speed[2] += 0.2;
+            }
+            if camera.wasd[5] {
+                speed[2] -= 0.2;
+            }
             camera.apply_speed(speed);
             camera.rotate(mouse_speed);
             drop(camera);
@@ -165,104 +161,118 @@ fn main() {
         }
     });
 
-    let mut render_mix_timer = 0;
+    let n_jobs = 12;
+    let pool = rayon::ThreadPoolBuilder::new().num_threads(n_jobs).build().unwrap();
+
+    let mut frame_counts: Vec<i32> = vec![0; (WIDTH * HEIGHT) as usize];
+
+    let tile_width = (WIDTH / 4) as usize;
 
     while let Some(e) = window.next() {
         match e {
-            Input(input, _) => {
-                match input {
-                    Button(button_args) => {
-                        if let piston_window::Button::Keyboard(key) = button_args.button {
-                            let camera = Arc::clone(&camera);
-                            let mut camera = camera.lock().unwrap();
-                            match button_args.state {
-                                piston_window::ButtonState::Press => {
-                                    match key {
-                                        piston_window::Key::W => {
-                                            camera.wasd[0] = true;
-                                            render_reset_flag.set(true);
-                                        }
-                                        piston_window::Key::A => {
-                                            camera.wasd[1] = true;
-                                            render_reset_flag.set(true);
-                                        }
-                                        piston_window::Key::S => {
-                                            camera.wasd[2] = true;
-                                            render_reset_flag.set(true);
-                                        }
-                                        piston_window::Key::D => {
-                                            camera.wasd[3] = true;
-                                            render_reset_flag.set(true);
-                                        }
-                                        _ => (),
-                                    }
+            Input(input, _) => match input {
+                Button(button_args) => {
+                    if let piston_window::Button::Keyboard(key) = button_args.button {
+                        let camera = Arc::clone(&camera);
+                        let mut camera = camera.lock().unwrap();
+                        match button_args.state {
+                            piston_window::ButtonState::Press => match key {
+                                piston_window::Key::W => {
+                                    camera.wasd[0] = true;
                                 }
-                                piston_window::ButtonState::Release => {
-                                    match key {
-                                        piston_window::Key::W => {
-                                            camera.wasd[0] = false;
-                                        }
-                                        piston_window::Key::A => {
-                                            camera.wasd[1] = false;
-                                        }
-                                        piston_window::Key::S => {
-                                            camera.wasd[2] = false;
-                                        }
-                                        piston_window::Key::D => {
-                                            camera.wasd[3] = false;
-                                        }
-                                        _ => (),
-                                    }
-                                },
-                            }
+                                piston_window::Key::A => {
+                                    camera.wasd[1] = true;
+                                }
+                                piston_window::Key::S => {
+                                    camera.wasd[2] = true;
+                                }
+                                piston_window::Key::D => {
+                                    camera.wasd[3] = true;
+                                }
+                                piston_window::Key::Space => {
+                                    camera.wasd[4] = true;
+                                }
+                                piston_window::Key::LCtrl => {
+                                    camera.wasd[5] = true;
+                                }
+                                _ => (),
+                            },
+                            piston_window::ButtonState::Release => match key {
+                                piston_window::Key::W => {
+                                    camera.wasd[0] = false;
+                                }
+                                piston_window::Key::A => {
+                                    camera.wasd[1] = false;
+                                }
+                                piston_window::Key::S => {
+                                    camera.wasd[2] = false;
+                                }
+                                piston_window::Key::D => {
+                                    camera.wasd[3] = false;
+                                }
+                                piston_window::Key::Space => {
+                                    camera.wasd[4] = false;
+                                }
+                                piston_window::Key::LCtrl => {
+                                    camera.wasd[5] = false;
+                                }
+                                _ => (),
+                            },
                         }
                     }
-                    piston_window::Input::Move(motion) => {
-                        if let piston_window::Motion::MouseRelative(pos) = motion {
-                            (*render_reset_flag).set(true);
-                            sender.send(pos).expect("Invalid Mouse Position Recorded!");
-                        }
-                    }
-                    _ => ()
                 }
-            }
+                piston_window::Input::Move(motion) => {
+                    if let piston_window::Motion::MouseRelative(pos) = motion {
+                        sender.send(pos).expect("Invalid Mouse Position Recorded!");
+                    }
+                }
+                _ => (),
+            },
             Loop(l) => {
                 if let piston_window::Loop::Render(_ren) = l {
                     let camera = Arc::clone(&camera);
-                    if render_mix_timer > 0 { render_mix_timer -= 1; }
-                    let flag = render_reset_flag.get();
                     window.draw_2d(&e, |c, g, device| {
                         piston_window::clear([1.0; 4], g);
-                        let now = Instant::now();
-                        while now.elapsed().as_millis() <= FRAME_TIME {
-                            let x = rand::thread_rng().gen_range(0..WIDTH);
-                            let y = rand::thread_rng().gen_range(0..HEIGHT);
-                            let pixel = frame_buffer.get_pixel_mut(x, y);
-                            let mut pixel_color = glm::vec3(0.0, 0.0, 0.0);
+                        pool.scope(|s| {
+                        for i in 0..n_jobs {
+                            let now = Instant::now();
+                            let mut fbuffer = frame_buffer.clone();
+                            let offset_x = (i % 4) * tile_width;
+                            let offset_y = (i / 4) * tile_width;
+                            let tile_width = if tile_width + offset_y > WIDTH.try_into().unwrap() {
+                                WIDTH as usize - offset_y
+                            } else {
+                                tile_width
+                            };
+                            s.spawn(move |_| {
+                                while now.elapsed().as_millis() <= FRAME_TIME {
+                                    let x = (rand::thread_rng().gen_range(0..tile_width) + offset_x) as u32;
+                                    let y = (rand::thread_rng().gen_range(0..tile_width) + offset_y).min((HEIGHT - 1).try_into().unwrap()) as u32; 
+                                    let pixel = fbuffer.get_pixel_mut(x, y);
+                                    let mut pixel_color = glm::vec3(0.0, 0.0, 0.0);
 
-                            for _i in 0..SAMPLES_PER_PIXEL {
-                                let screen_coords = glm::vec2(
-                                    (x as f64 + rand::random::<f64>()) / WIDTH as f64,
-                                    1. - ((y as f64 + rand::random::<f64>()) / HEIGHT as f64),
-                                );
-                                let ray: ray::Ray = camera.lock().unwrap().get_ray(screen_coords);
-                                pixel_color += ray::ray_color(&ray, &world, RAY_DEPTH);
+                                    for _i in 0..SAMPLES_PER_PIXEL {
+                                        let screen_coords = glm::vec2(
+                                            (x as f64 + rand::random::<f64>()) / WIDTH as f64,
+                                            1. - ((y as f64 + rand::random::<f64>())
+                                                / HEIGHT as f64),
+                                        );
+                                        let ray: ray::Ray =
+                                            camera.lock().unwrap().get_ray(screen_coords);
+                                        pixel_color += ray::ray_color(&ray, &world, RAY_DEPTH);
+                                    }
+                                    *pixel = color::write_pixel(
+                                        pixel_color,
+                                        *pixel,
+                                        SAMPLES_PER_PIXEL,
+                                        frame_counts[(x + y * WIDTH) as usize],
+                                    );
+                                    frame_counts[(x + y * WIDTH) as usize] += 1;
+                                }
+                            });
                             }
-                            if flag { 
-                                render_reset_flag.set(false);
-                                render_mix_timer = 100;
-                                *pixel = image::Rgba([0;4]);
-                                frame_counts[(x + y * WIDTH) as usize] = 0;
-                            }
-                            *pixel = color::write_pixel(
-                                pixel_color,
-                                *pixel,
-                                SAMPLES_PER_PIXEL,
-                                frame_counts[(x + y * WIDTH) as usize],
-                                render_mix_timer
-                            );
-                            frame_counts[(x + y * WIDTH) as usize] += 1;
-                        }
+                                
+                        });
                         tex.update(&mut tex_context, &frame_buffer).unwrap();
                         piston_window::image(&tex, c.transform, g);
                         tex_context.encoder.flush(device);

@@ -23,7 +23,7 @@ pub fn set_face_normal(r: &ray::Ray, outward_normal: glm::TVec3<f64>) -> (glm::T
     (normal, front_face)
 }
 
-pub trait Hittable {
+pub trait Hittable: Sync + Send {
     fn hit(&self, r: &ray::Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
 }
 

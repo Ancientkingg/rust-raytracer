@@ -25,7 +25,7 @@ impl<M: materials::Material> Sphere<M> {
     }
 }
 
-impl<M: 'static +  materials::Material> Hittable for Sphere<M> {
+impl<M: 'static +  materials::Material + Send> Hittable for Sphere<M> {
     fn hit(&self, r: &ray::Ray, t_min: f64, t_max: f64) -> Option<objects::HitRecord> {
         let oc = r.origin - self.centre;
         let a = glm::dot(&r.direction, &r.direction);

@@ -5,7 +5,7 @@ use crate::util;
 use nalgebra_glm as glm;
 use std::sync::Arc;
 
-pub trait Material {
+pub trait Material: Sync {
     fn scatter(&self, r_in: &ray::Ray, hit: &objects::HitRecord) -> Option<(ray::Ray, glm::TVec3<f64>)>;
 }
 

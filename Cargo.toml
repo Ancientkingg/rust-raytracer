@@ -15,6 +15,7 @@ nalgebra-glm = "0.16.0"
 rand = "0.8.4"
 find_folder = "0.3.0"
 threadpool = "1.0"
+rayon = "1.5.1"
 
 [env]
 WINIT_HIDPI_FACTOR=1.0
