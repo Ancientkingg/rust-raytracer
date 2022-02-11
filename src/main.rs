@@ -25,8 +25,8 @@ mod util;
 const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 720;
 const SAMPLES_PER_PIXEL: u32 = 1;
-const RAY_DEPTH: u8 = 50;
-const FRAME_TIME: u128 = 50;
+const RAY_DEPTH: u8 = 20;
+const FRAME_TIME: u128 = 1000 / 10;
 
 fn main() {
     let mut frame_buffer: image::RgbaImage =
@@ -50,15 +50,8 @@ fn main() {
     )
     .unwrap();
 
-    // window.set_lazy(true);
-    // let _counter = Instant::now();
     let mut fps_counter = fps_counter::FpsCounter::new();
 
-    //* MULTI THREADING
-    // let n_workers = 4;
-    // let n_jobs = 8;
-    // let pool = ThreadPool::new(n_workers);
-    // let (tx, rx) = channel();
 
     //* WORLD
     let mut world = objects::HittableList::default();
@@ -125,38 +118,38 @@ fn main() {
     let cam: Arc<Mutex<camera::Camera>> = Arc::clone(&camera);
     let (sender, receiver) = channel();
     thread::spawn(move || {
-        let mut speed: [f64; 2] = [0.0; 2];
+        let mut speed: [f64; 3] = [0.0; 3];
         loop {
             let mouse_speed = receiver.try_recv().unwrap_or([0.0,0.0]);
             let mut camera = cam.lock().unwrap();
-            if speed[0].abs() < 0.01 {
-                speed[0] = 0.0;
-            }
-            if speed[1].abs() < 0.01 {
-                speed[1] = 0.0;
-            }
-            if speed[0] > 0.0 {
-                speed[0] -= 0.1;
-            } else if speed[0] < 0.0 {
-                speed[0] += 0.1;
-            }
-            if speed[1] > 0.0 {
-                speed[1] -= 0.1;
-            } else if speed[1] < 0.0 {
-                speed[1] += 0.1;
+            for i  in 0..speed.len() {
+                if speed[i].abs() < 0.05 {
+                    speed[i] = 0.0;
+                }
+                if speed[i] > 0.0 {
+                    speed[i] -= 0.1;
+                } else if speed[i] < 0.0 {
+                    speed[i] += 0.1;
+                }
             }
             // check for wasd to add or remove speed; make sure to make origin arc mutex
             if camera.wasd[0] {
-                speed[0] += 0.2;
+                speed[0] += 0.125;
             }
             if camera.wasd[1] {
-                speed[1] -= 0.2;
+                speed[1] -= 0.125;
             }
             if camera.wasd[2] {
-                speed[0] -= 0.2;
+                speed[0] -= 0.125;
             }
             if camera.wasd[3] {
-                speed[1] += 0.2;
+                speed[1] += 0.125;
+            }
+            if camera.wasd[4] {
+                speed[2] += 0.125;
+            }
+            if camera.wasd[5] {
+                speed[2] -= 0.125;
             }
             camera.apply_speed(speed);
             camera.rotate(mouse_speed);
@@ -165,7 +158,6 @@ fn main() {
         }
     });
 
-    let mut render_mix_timer = 0;
 
     while let Some(e) = window.next() {
         match e {
@@ -180,19 +172,21 @@ fn main() {
                                     match key {
                                         piston_window::Key::W => {
                                             camera.wasd[0] = true;
-                                            render_reset_flag.set(true);
                                         }
                                         piston_window::Key::A => {
                                             camera.wasd[1] = true;
-                                            render_reset_flag.set(true);
                                         }
                                         piston_window::Key::S => {
                                             camera.wasd[2] = true;
-                                            render_reset_flag.set(true);
                                         }
                                         piston_window::Key::D => {
                                             camera.wasd[3] = true;
-                                            render_reset_flag.set(true);
+                                        }
+                                        piston_window::Key::Space => {
+                                            camera.wasd[4] = true;
+                                        }
+                                        piston_window::Key::LCtrl => {
+                                            camera.wasd[5] = true;
                                         }
                                         _ => (),
                                     }
@@ -210,6 +204,12 @@ fn main() {
                                         }
                                         piston_window::Key::D => {
                                             camera.wasd[3] = false;
+                                        }
+                                        piston_window::Key::Space => {
+                                            camera.wasd[4] = false;
+                                        }
+                                        piston_window::Key::LCtrl => {
+                                            camera.wasd[5] = false;
                                         }
                                         _ => (),
                                     }
@@ -229,8 +229,6 @@ fn main() {
             Loop(l) => {
                 if let piston_window::Loop::Render(_ren) = l {
                     let camera = Arc::clone(&camera);
-                    if render_mix_timer > 0 { render_mix_timer -= 1; }
-                    let flag = render_reset_flag.get();
                     window.draw_2d(&e, |c, g, device| {
                         piston_window::clear([1.0; 4], g);
                         let now = Instant::now();
@@ -248,18 +246,11 @@ fn main() {
                                 let ray: ray::Ray = camera.lock().unwrap().get_ray(screen_coords);
                                 pixel_color += ray::ray_color(&ray, &world, RAY_DEPTH);
                             }
-                            if flag { 
-                                render_reset_flag.set(false);
-                                render_mix_timer = 100;
-                                *pixel = image::Rgba([0;4]);
-                                frame_counts[(x + y * WIDTH) as usize] = 0;
-                            }
                             *pixel = color::write_pixel(
                                 pixel_color,
                                 *pixel,
                                 SAMPLES_PER_PIXEL,
-                                frame_counts[(x + y * WIDTH) as usize],
-                                render_mix_timer
+                                frame_counts[(x + y * WIDTH) as usize]
                             );
                             frame_counts[(x + y * WIDTH) as usize] += 1;
                         }
