@@ -20,7 +20,7 @@ or run it directly
 
 
 
-In the code there are some constants which control the resolution and the fps the raytracer tries to maintain, which you can change the change the result.
+In the code there are some constants which control the resolution and the fps the raytracer tries to maintain, which you can change to change the appearance of the ray tracer.
 
 ## What I used
 
