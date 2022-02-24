@@ -1,6 +1,6 @@
 # A Realtime Raytracer written in Rust
 
-![](C:\Users\Familie\AppData\Roaming\marktext\images\2022-02-24-18-17-46-image.png)
+![](https://github.com/Ancientkingg/rust-raytracer/blob/master/picture.png?raw=true)
 
 I have written this project as practice to learn Rust with the aim to know the language a lot better and become a lot more comfortable with it. The initial influence to write this little raytracer was when I came across [this guide]()https://raytracing.github.io/books/RayTracingInOneWeekend.html) written by Peter Shirley. I decided to follow it through to see if I could actually write a raytracer, since I always found graphics quite interesting to work with, but had never actually written an actual software raytracer before.
 
