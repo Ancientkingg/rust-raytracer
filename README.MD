@@ -1,4 +1,4 @@
-# A Realtime Raytracer written in Rust
+# A real-time ray tracer written in Rust
 
 ![](https://github.com/Ancientkingg/rust-raytracer/blob/master/picture.png?raw=true)
 
